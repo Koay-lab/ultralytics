@@ -9,25 +9,25 @@ def main(data_spec):
     })
 
     # Create a new YOLO model from scratch
-    # model = YOLO('yolov8n.yaml')
+    model = YOLO("yolov8n-pose-grayscale.yaml")
+    model.load("yolov8n-pose.pt")
 
     # Load a pretrained YOLO model (recommended for training)
-    model = YOLO('yolov8n-pose.pt')
+    # model = YOLO('yolov8n-pose.pt')
 
     # Train the model using the 'coco128.yaml' dataset for 3 epochs
     results = model.train(data=data_spec,
                           epochs=1000, imgsz=640, batch=64,
-                          save=True, save_period=100,
+                          save=True, save_period=50,
                           verbose=True,
-                          cache=True, workers=2,
+                          cache="disk", workers=8,
                           device=0,
-                          augment=True,
-                          flipud=0.3,  # image flip up-down (probability)
+                          augment=False,
                           )
     print(results)
 
     # Evaluate the model's performance on the validation set
-    results = model.val(device=1)
+    results = model.val(device=0)
     print(results)
 
     # Perform object detection on an image using the model
@@ -40,4 +40,5 @@ def main(data_spec):
 
 if __name__ == "__main__":
     # freeze_support()
-    main("D:/Data/081823_masks_on_spine/081823_masks_on_spine.yaml")
+    # main("D:/Data/081823_masks_on_spine/081823_masks_on_spine.yaml")
+    main("D:/Data/081823_masks_on_high_quality/081823_masks_on_high_quality.yaml")

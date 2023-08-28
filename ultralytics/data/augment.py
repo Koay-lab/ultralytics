@@ -585,6 +585,8 @@ class LetterBox:
         img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT,
                                  value=(114, 114, 114))  # add border
 
+        if len(img.shape) < 3:
+            img = img[:, :, np.newaxis]
         if len(labels):
             labels = self._update_labels(labels, ratio, dw, dh)
             labels['img'] = img
