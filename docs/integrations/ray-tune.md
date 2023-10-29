@@ -30,27 +30,31 @@ To install the required packages, run:
 
 !!! tip "Installation"
 
-    ```bash
-    # Install and update Ultralytics and Ray Tune packages
-    pip install -U ultralytics "ray[tune]"
+    === "CLI"
 
-    # Optionally install W&B for logging
-    pip install wandb
-    ```
+        ```bash
+        # Install and update Ultralytics and Ray Tune packages
+        pip install -U ultralytics "ray[tune]"
+
+        # Optionally install W&B for logging
+        pip install wandb
+        ```
 
 ## Usage
 
 !!! example "Usage"
 
-    ```python
-    from ultralytics import YOLO
+    === "Python"
 
-    # Load a YOLOv8n model
-    model = YOLO("yolov8n.pt")
-    
-    # Start tuning hyperparameters for YOLOv8n training on the COCO128 dataset
-    result_grid = model.tune(data="coco128.yaml")
-    ```
+        ```python
+        from ultralytics import YOLO
+
+        # Load a YOLOv8n model
+        model = YOLO('yolov8n.pt')
+
+        # Start tuning hyperparameters for YOLOv8n training on the COCO8 dataset
+        result_grid = model.tune(data='coco8.yaml', use_ray=True)
+        ```
 
 ## `tune()` Method Parameters
 
@@ -62,7 +66,7 @@ The `tune()` method in YOLOv8 provides an easy-to-use interface for hyperparamet
 | `space`         | `dict, optional` | A dictionary defining the hyperparameter search space for Ray Tune. Each key corresponds to a hyperparameter name, and the value specifies the range of values to explore during tuning. If not provided, YOLOv8 uses a default search space with various hyperparameters.                     |               |
 | `grace_period`  | `int, optional`  | The grace period in epochs for the [ASHA scheduler](https://docs.ray.io/en/latest/tune/api/schedulers.html) in Ray Tune. The scheduler will not terminate any trial before this number of epochs, allowing the model to have some minimum training before making a decision on early stopping. | 10            |
 | `gpu_per_trial` | `int, optional`  | The number of GPUs to allocate per trial during tuning. This helps manage GPU usage, particularly in multi-GPU environments. If not provided, the tuner will use all available GPUs.                                                                                                           | None          |
-| `max_samples`   | `int, optional`  | The maximum number of trials to run during tuning. This parameter helps control the total number of hyperparameter combinations tested, ensuring the tuning process does not run indefinitely.                                                                                                 | 10            |
+| `iterations`    | `int, optional`  | The maximum number of trials to run during tuning. This parameter helps control the total number of hyperparameter combinations tested, ensuring the tuning process does not run indefinitely.                                                                                                 | 10            |
 | `**train_args`  | `dict, optional` | Additional arguments to pass to the `train()` method during tuning. These arguments can include settings like the number of training epochs, batch size, and other training-specific configurations.                                                                                           | {}            |
 
 By customizing these parameters, you can fine-tune the hyperparameter optimization process to suit your specific needs and available computational resources.
@@ -110,16 +114,17 @@ In this example, we demonstrate how to use a custom search space for hyperparame
     # Run Ray Tune on the model
     result_grid = model.tune(data="coco128.yaml",
                              space={"lr0": tune.uniform(1e-5, 1e-1)},
-                             epochs=50)
+                             epochs=50,
+                             use_ray=True)
     ```
 
 In the code snippet above, we create a YOLO model with the "yolov8n.pt" pretrained weights. Then, we call the `tune()` method, specifying the dataset configuration with "coco128.yaml". We provide a custom search space for the initial learning rate `lr0` using a dictionary with the key "lr0" and the value `tune.uniform(1e-5, 1e-1)`. Finally, we pass additional training arguments, such as the number of epochs directly to the tune method as `epochs=50`.
 
-# Processing Ray Tune Results
+## Processing Ray Tune Results
 
 After running a hyperparameter tuning experiment with Ray Tune, you might want to perform various analyses on the obtained results. This guide will take you through common workflows for processing and analyzing these results.
 
-## Loading Tune Experiment Results from a Directory
+### Loading Tune Experiment Results from a Directory
 
 After running the tuning experiment with `tuner.fit()`, you can load the results from a directory. This is useful, especially if you're performing the analysis after the initial training script has exited.
 
@@ -131,7 +136,7 @@ restored_tuner = tune.Tuner.restore(experiment_path, trainable=train_mnist)
 result_grid = restored_tuner.get_results()
 ```
 
-## Basic Experiment-Level Analysis
+### Basic Experiment-Level Analysis
 
 Get an overview of how trials performed. You can quickly check if there were any errors during the trials.
 
@@ -142,7 +147,7 @@ else:
     print("No errors!")
 ```
 
-## Basic Trial-Level Analysis
+### Basic Trial-Level Analysis
 
 Access individual trial hyperparameter configurations and the last reported metrics.
 
@@ -151,7 +156,7 @@ for i, result in enumerate(result_grid):
     print(f"Trial #{i}: Configuration: {result.config}, Last Reported Metrics: {result.metrics}")
 ```
 
-## Plotting the Entire History of Reported Metrics for a Trial
+### Plotting the Entire History of Reported Metrics for a Trial
 
 You can plot the history of reported metrics for each trial to see how the metrics evolved over time.
 

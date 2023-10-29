@@ -20,7 +20,7 @@ class_index, x1, y1, x2, y2, x3, y3, x4, y4
 
 Internally, YOLO processes losses and outputs in the `xywhr` format, which represents the bounding box's center point (xy), width, height, and rotation.
 
-<p align="center"><img width="800" src="https://user-images.githubusercontent.com/26833433/259471881-59020fe2-09a4-4dcc-acce-9b0f7cfa40ee.png"></p>
+<p align="center"><img width="800" src="https://user-images.githubusercontent.com/26833433/259471881-59020fe2-09a4-4dcc-acce-9b0f7cfa40ee.png" alt="OBB format examples"></p>
 
 An example of a `*.txt` label file for the above image, which contains an object of class `0` in OBB format, could look like:
 
@@ -69,11 +69,15 @@ For those looking to introduce their own datasets with oriented bounding boxes, 
 
 Transitioning labels from the DOTA dataset format to the YOLO OBB format can be achieved with this script:
 
-```python
-from ultralytics.data.converter import convert_dota_to_yolo_obb
+!!! example ""
 
-convert_dota_to_yolo_obb('path/to/DOTA')
-```
+    === "Python"
+
+        ```python
+        from ultralytics.data.converter import convert_dota_to_yolo_obb
+
+        convert_dota_to_yolo_obb('path/to/DOTA')
+        ```
 
 This conversion mechanism is instrumental for datasets in the DOTA format, ensuring alignment with the Ultralytics YOLO OBB format.
 
