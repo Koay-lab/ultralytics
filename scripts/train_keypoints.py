@@ -18,17 +18,18 @@ def main(data_spec):
     # Train the model using the 'coco128.yaml' dataset for 3 epochs
     results = model.train(data=data_spec,
                           epochs=1000, imgsz=640, batch=64,
+                          optimizer="auto",
+                          # optimizer="AdamW", lr0=0.001,
                           save=True, save_period=50,
-                          verbose=True,
                           cache="disk", workers=8,
-                          device=0,
+                          verbose=True, device=0,
                           augment=False,
                           )
     print(results)
 
     # Evaluate the model's performance on the validation set
-    results = model.val(device=0)
-    print(results)
+    # results = model.val(device=0)
+    # print(results)
 
     # Perform object detection on an image using the model
     # results = model("D:/Data/081823_masks_on/images/val/081823_masks_on_20230818-1353_cam21492306_frame600.png")
@@ -41,4 +42,5 @@ def main(data_spec):
 if __name__ == "__main__":
     # freeze_support()
     # main("D:/Data/081823_masks_on_spine/081823_masks_on_spine.yaml")
-    main("D:/Data/081823_masks_on_high_quality/081823_masks_on_high_quality.yaml")
+    # main("D:/Data/081823_masks_on_high_quality/081823_masks_on_high_quality.yaml")
+    main("D:/Data/102723_reward_field/102723_reward_field.yaml")
