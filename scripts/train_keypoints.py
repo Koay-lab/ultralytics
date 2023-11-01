@@ -1,3 +1,14 @@
+"""
+Useful info:
+
+** How keypoint visibility is treated by Yolo
+https://github.com/ultralytics/ultralytics/issues/4199
+
+* Coordinates must be clipped between [0, 1] even for invisible keypoints that are outside of the image, otherwise the
+image and its annotation will be ignored as invalid.
+"""
+
+
 def main(data_spec):
     import os
     from ultralytics import YOLO
@@ -43,4 +54,5 @@ if __name__ == "__main__":
     # freeze_support()
     # main("D:/Data/081823_masks_on_spine/081823_masks_on_spine.yaml")
     # main("D:/Data/081823_masks_on_high_quality/081823_masks_on_high_quality.yaml")
-    main("D:/Data/102723_reward_field/102723_reward_field.yaml")
+    # main("D:/Data/102723_reward_field_plus_before/102723_reward_field_plus_before.yaml")
+    main("D:/Data/102723_reward_field_edge_cases/102723_reward_field_edge_cases.yaml")
