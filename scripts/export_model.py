@@ -20,4 +20,5 @@ if __name__ == "__main__":
     # main("D:/Data/081823_masks_on_high_quality/runs/pose/train13/weights/epoch150.pt")
     # main("D:/Data/102723_reward_field_plus_before/runs/pose/train/weights/epoch50.pt")
     # main("D:/Data/102723_reward_field_plus_before/runs/pose/train/weights/epoch100.pt")
-    main("D:/Data/102723_reward_field_edge_cases/runs/pose/train/weights/best.pt")
+    # main("D:/Data/102723_reward_field_edge_cases/runs/pose/train/weights/best.pt")
+    main("D:/AnnotationData/250923_addrig2_absolute/runs/pose/train/weights/best.pt")

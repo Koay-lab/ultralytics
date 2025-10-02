@@ -11,8 +11,7 @@ image and its annotation will be ignored as invalid.
 
 def main(data_spec):
     import os
-    from ultralytics import YOLO
-    from ultralytics import settings
+    from ultralytics import YOLO, settings
 
     settings.update({
         "runs_dir": os.path.join(os.path.dirname(data_spec), "runs"),
@@ -55,4 +54,7 @@ if __name__ == "__main__":
     # main("D:/Data/081823_masks_on_spine/081823_masks_on_spine.yaml")
     # main("D:/Data/081823_masks_on_high_quality/081823_masks_on_high_quality.yaml")
     # main("D:/Data/102723_reward_field_plus_before/102723_reward_field_plus_before.yaml")
-    main("D:/Data/102723_reward_field_edge_cases/102723_reward_field_edge_cases.yaml")
+    # main("D:/Data/102723_reward_field_edge_cases/102723_reward_field_edge_cases.yaml")
+    # main("D:/AnnotationData/250313_zegmed_absolute/250313_zegmed_absolute.yaml")
+    # main("D:/AnnotationData/250721_addrig2_3_absolute/250721_addrig2_3_absolute.yaml")
+    main("D:/AnnotationData/250923_addrig2_absolute/250923_addrig2_absolute.yaml")
