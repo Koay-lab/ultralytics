@@ -1219,8 +1219,15 @@ class RandomPerspective(BaseTransform):
             bboxes, segments = self.apply_segments(segments, M, params["size"])
 
         if keypoints is not None:
-            keypoints = self.apply_keypoints(keypoints, M, params["size"])
-        new_instances = Instances(bboxes, segments, keypoints, bbox_format="xyxy", normalized=False)
+            keypoints = self.apply_keypoints(keypoints, M, params["size"], instances.preserve_offimage_keypoints)
+        new_instances = Instances(
+            bboxes,
+            segments,
+            keypoints,
+            bbox_format="xyxy",
+            normalized=False,
+            preserve_offimage_keypoints=instances.preserve_offimage_keypoints,
+        )
         # Clip
         new_instances.clip(*params["size"], preserve_obb=self.preserve_obb)
 
@@ -1288,7 +1295,9 @@ class RandomPerspective(BaseTransform):
             segments[..., 1] = segments[..., 1].clip(bboxes[:, 1:2], bboxes[:, 3:4])
         return bboxes, segments
 
-    def apply_keypoints(self, keypoints: np.ndarray, M: np.ndarray, size: tuple[int, int]) -> np.ndarray:
+    def apply_keypoints(
+        self, keypoints: np.ndarray, M: np.ndarray, size: tuple[int, int], preserve_offimage_keypoints: bool = False
+    ) -> np.ndarray:
         """Apply affine transformation to keypoints.
 
         This method transforms the input keypoints using the provided affine transformation matrix. It handles
@@ -1300,6 +1309,7 @@ class RandomPerspective(BaseTransform):
                 the number of keypoints per instance, and 3 represents (x, y, visibility).
             M (np.ndarray): 3x3 affine transformation matrix.
             size (tuple[int, int]): Size of the output image (width, height) used to determine visibility of keypoints.
+            preserve_offimage_keypoints (bool): Keep newly off-image labeled points supervised with visibility 1.
 
         Returns:
             (np.ndarray): Transformed keypoints array with the same shape as input (N, K, 3).
@@ -1319,7 +1329,7 @@ class RandomPerspective(BaseTransform):
         xy = xy @ M.T  # transform
         xy = xy[:, :2] / xy[:, 2:3]  # perspective rescale or affine
         out_mask = (xy[:, 0] < 0) | (xy[:, 1] < 0) | (xy[:, 0] > size[0]) | (xy[:, 1] > size[1])
-        visible[out_mask] = 0
+        visible[out_mask] = (visible[out_mask] > 0) if preserve_offimage_keypoints else 0
         return np.concatenate([xy, visible], axis=-1).reshape(n, nkpt, 3)
 
     def apply_semantic(self, labels: dict[str, Any], params: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -2188,6 +2198,8 @@ class Albumentations(BaseTransform):
             key = "semantic_mask" if labels.get("semantic_mask") is not None else "depth"
             mask = labels.get(key)
             instances = labels["instances"]
+            if instances.preserve_offimage_keypoints:
+                raise ValueError("Spatial Albumentations do not preserve off-image keypoints; use native transforms")
             instances.convert_bbox("xywh")
             instances.normalize(*im.shape[:2][::-1])
             segments, keypoints = instances.segments, instances.keypoints

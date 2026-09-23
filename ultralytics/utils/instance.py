@@ -222,6 +222,7 @@ class Instances:
         keypoints: np.ndarray = None,
         bbox_format: str = "xywh",
         normalized: bool = True,
+        preserve_offimage_keypoints: bool = False,
     ) -> None:
         """Initialize the Instances object with bounding boxes, segments, and keypoints.
 
@@ -231,10 +232,12 @@ class Instances:
             keypoints (np.ndarray, optional): Keypoints with shape (N, 17, 3) in format (x, y, visible).
             bbox_format (str): Format of bboxes.
             normalized (bool): Whether the coordinates are normalized.
+            preserve_offimage_keypoints (bool): Keep off-image coordinates and demote labeled points to visibility 1.
         """
         self._bboxes = Bboxes(bboxes=bboxes, format=bbox_format)
         self.keypoints = keypoints
         self.normalized = normalized
+        self.preserve_offimage_keypoints = preserve_offimage_keypoints
         self.segments = segments if segments is not None else np.zeros((0, 0, 2), dtype=np.float32)
 
     def convert_bbox(self, format: str) -> None:
@@ -336,6 +339,7 @@ class Instances:
             keypoints=keypoints,
             bbox_format=bbox_format,
             normalized=self.normalized,
+            preserve_offimage_keypoints=self.preserve_offimage_keypoints,
         )
 
     def flipud(self, h: int) -> None:
@@ -419,6 +423,16 @@ class Instances:
         if ori_format != "xyxy":
             self.convert_bbox(format=ori_format)
         if self.keypoints is not None:
+            # Preserve annotated off-image targets only for datasets requesting that contract.
+            if self.preserve_offimage_keypoints:
+                outside = (
+                    (self.keypoints[..., 0] < 0)
+                    | (self.keypoints[..., 0] >= w)
+                    | (self.keypoints[..., 1] < 0)
+                    | (self.keypoints[..., 1] >= h)
+                )
+                self.keypoints[..., 2][outside & (self.keypoints[..., 2] > 0)] = 1
+                return
             # Set out of bounds visibility to zero
             self.keypoints[..., 2][
                 (self.keypoints[..., 0] < 0)
@@ -506,7 +520,14 @@ class Instances:
         else:
             cat_segments = np.concatenate([b.segments for b in instances_list], axis=axis)
         cat_keypoints = np.concatenate([b.keypoints for b in instances_list], axis=axis) if use_keypoint else None
-        return cls(cat_boxes, cat_segments, cat_keypoints, bbox_format, normalized)
+        return cls(
+            cat_boxes,
+            cat_segments,
+            cat_keypoints,
+            bbox_format,
+            normalized,
+            preserve_offimage_keypoints=instances_list[0].preserve_offimage_keypoints,
+        )
 
     @property
     def bboxes(self) -> np.ndarray:

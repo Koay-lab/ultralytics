@@ -609,7 +609,9 @@ def scale_masks(
     return F.interpolate(masks[..., top:bottom, left:right].float(), shape, mode=mode)  # NCHW masks
 
 
-def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None, normalize: bool = False, padding: bool = True):
+def scale_coords(
+    img1_shape, coords, img0_shape, ratio_pad=None, normalize: bool = False, padding: bool = True, clip: bool = True
+):
     """Rescale segment coordinates from img1_shape to img0_shape.
 
     Args:
@@ -619,6 +621,7 @@ def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None, normalize: bool
         ratio_pad (tuple, optional): Ratio and padding values as ((ratio_h, ratio_w), (pad_w, pad_h)).
         normalize (bool): Whether to normalize coordinates to range [0, 1].
         padding (bool): Whether coordinates are based on YOLO-style augmented images with padding.
+        clip (bool): Clip to image bounds. Disable to preserve off-image keypoint predictions.
 
     Returns:
         (torch.Tensor): Scaled coordinates.
@@ -638,7 +641,8 @@ def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None, normalize: bool
         coords[..., 1] -= pad[1]  # y padding
     coords[..., 0] /= gain_x
     coords[..., 1] /= gain_y
-    coords = clip_coords(coords, img0_shape)
+    if clip:
+        coords = clip_coords(coords, img0_shape)
     if normalize:
         coords[..., 0] /= img0_w  # width
         coords[..., 1] /= img0_h  # height
