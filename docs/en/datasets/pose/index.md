@@ -238,3 +238,20 @@ convert_coco(labels_dir="path/to/coco/annotations/", use_keypoints=True)
 ```
 
 This tool helps seamlessly integrate COCO datasets into YOLO projects. For details, refer to the [Conversion Tool](#conversion-tool) section and the [data preprocessing guide](../../guides/preprocessing-annotated-data.md).
+
+
+## Koay-lab off-image annotations
+
+This fork supports `preserve_offimage_keypoints: true` in a pose dataset YAML with `kpt_shape: [N, 3]`.
+The default remains `false`. With this option, finite coordinates outside `[0, 1]` are accepted for
+visibility 1 (annotated but not visible). Visibility 2 must be inside the image; visibility 0 remains
+unsupervised. Boxes must stay inside the normalized label bounds.
+
+Native geometric transforms retain coordinates and demote newly out-of-image labeled points to 1.
+Moving a visibility-1 point back inside does not promote it to 2. Label caches include this option,
+and validation rescaling retains off-image predictions. Existing pose losses already supervise both
+1 and 2; this option does not change the confidence head or introduce a visible/occluded classifier.
+
+Custom spatial Albumentations are rejected for this contract because they may discard coordinates;
+native transforms and nonspatial Albumentations remain available. The Polyvidcam TensorRT decoder
+retains off-image predictions; the generic Ultralytics prediction UI retains its usual clipping.

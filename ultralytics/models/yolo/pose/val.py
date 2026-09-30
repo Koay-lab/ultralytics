@@ -247,6 +247,7 @@ class PoseValidator(DetectionValidator):
                 predn["keypoints"].clone(),
                 pbatch["ori_shape"],
                 ratio_pad=pbatch["ratio_pad"],
+                clip=not self.data.get("preserve_offimage_keypoints", False),
             ),
         }
 

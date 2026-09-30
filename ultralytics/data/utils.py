@@ -50,6 +50,8 @@ IMG_FORMATS = {
 }
 VID_FORMATS = {"asf", "avi", "gif", "m4v", "mkv", "mov", "mp4", "mpeg", "mpg", "ts", "wmv", "webm"}  # videos
 FORMATS_HELP_MSG = f"Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}"
+OFFIMAGE_KEYPOINTS_VERSION = 1  # Koay-lab opt-in annotation contract.
+
 DATASET_KEY_TYPES = {  # dataset YAML keys and their permitted types
     "path": (str,),
     "train": (str, list),
@@ -57,6 +59,7 @@ DATASET_KEY_TYPES = {  # dataset YAML keys and their permitted types
     "test": (str, list),
     "names": (list, dict),
     "kpt_shape": (list,),
+    "preserve_offimage_keypoints": (bool,),
     "flip_idx": (list,),
 }
 
@@ -327,8 +330,17 @@ def verify_image_mask(args: tuple) -> tuple:
     return None, None, None, None, nm, nf, nc, msg
 
 
-def verify_image_label(args: tuple) -> list:
-    """Verify one image-label pair."""
+def verify_image_label(args: tuple, preserve_offimage_keypoints: bool = False) -> tuple | list:
+    """Verify one image-label pair, optionally retaining annotated off-image pose targets.
+
+    Args:
+        args (tuple): Image path, label path, prefix, pose flag, class count, keypoint count, dimensions, single-class flag.
+        preserve_offimage_keypoints (bool): Accept finite off-image coordinates with visibility 0 or 1.
+            Visibility 2 must remain inside the image; bounding boxes retain their normalized bounds.
+
+    Returns:
+        (tuple | list): Verified image, labels, shape, segments, keypoints, scan counts, and warning message.
+    """
     im_file, lb_file, prefix, keypoint, num_cls, nkpt, ndim, single_cls = args
     # Number (missing, found, empty, corrupt), message, segments, keypoints
     nm, nf, ne, nc, msg, segments, keypoints = 0, 0, 0, 0, "", [], None
@@ -355,9 +367,20 @@ def verify_image_label(args: tuple) -> list:
                 else:
                     assert lb.shape[1] == 5, f"labels require 5 columns, {lb.shape[1]} columns detected"
                     points = lb[:, 1:]
+                # Off-image supervision is explicit and keeps ordinary label validation unchanged.
+                if keypoint and preserve_offimage_keypoints:
+                    assert ndim == 3 and np.isfinite(lb).all(), "Off-image labels require finite x,y,visibility"
+                    kpts = lb[:, 5:].reshape(-1, ndim)
+                    assert np.isin(kpts[:, 2], (0, 1, 2)).all(), "Keypoint visibility must be 0, 1, or 2"
+                    visible = kpts[kpts[:, 2] == 2, :2]
+                    assert ((visible >= 0) & (visible <= 1)).all(), "Visible keypoints must be inside the image"
+                    assert (lb[:, :5] >= 0).all() and (lb[:, 1:5] <= 1).all(), "Invalid class or box"
+                    points = lb[:, 1:5]
                 # Coordinate points check with 1% tolerance
                 assert points.max() <= 1.01, f"non-normalized or out of bounds coordinates {points[points > 1.01]}"
-                assert lb.min() >= -0.01, f"negative class labels or coordinate {lb[lb < -0.01]}"
+                assert (lb[:, :5] if keypoint and preserve_offimage_keypoints else lb).min() >= -0.01, (
+                    f"negative class labels or coordinate {lb[lb < -0.01]}"
+                )
 
                 # All labels
                 max_cls = 0 if single_cls else lb[:, 0].max()  # max label count

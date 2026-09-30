@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
+from functools import partial
 from itertools import repeat
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
@@ -98,6 +99,10 @@ class YOLODataset(BaseDataset):
         self.use_keypoints = task == "pose"
         self.use_obb = task == "obb"
         self.data = data
+        if data.get("preserve_offimage_keypoints", False) and (
+            not self.use_keypoints or data.get("kpt_shape", [0, 0])[1] != 3
+        ):
+            raise ValueError("preserve_offimage_keypoints requires pose labels with kpt_shape: [N, 3]")
         nkpt, ndim = self.data.get("kpt_shape", (0, 0))
         if self.use_keypoints and (nkpt <= 0 or ndim not in {2, 3}):  # checked before the label cache is consulted
             raise ValueError(
@@ -168,7 +173,13 @@ class YOLODataset(BaseDataset):
         Returns:
             (str): Dataset cache hash.
         """
-        scan_args = (self.use_keypoints, len(self.data["names"]), self.data.get("kpt_shape"), self.single_cls)
+        scan_args = (
+            self.use_keypoints,
+            len(self.data["names"]),
+            self.data.get("kpt_shape"),
+            self.single_cls,
+            self.data.get("preserve_offimage_keypoints", False),
+        )
         return get_hash(self.label_files + self.im_files + [str(scan_args)])
 
     def scan_summary(self, nf: int, nm: int, ne: int, nc: int) -> str:
@@ -192,7 +203,9 @@ class YOLODataset(BaseDataset):
             (tuple): (verify function, zipped argument iterable) for ThreadPool.imap.
         """
         nkpt, ndim = self.data.get("kpt_shape", (0, 0))
-        return verify_image_label, zip(
+        return partial(
+            verify_image_label, preserve_offimage_keypoints=self.data.get("preserve_offimage_keypoints", False)
+        ), zip(
             self.im_files,
             self.label_files,
             repeat(self.prefix),
@@ -404,7 +417,14 @@ class YOLODataset(BaseDataset):
             segments = np.stack(resample_segments(segments, n=segment_resamples), axis=0)
         else:
             segments = np.zeros((0, segment_resamples, 2), dtype=np.float32)
-        label["instances"] = Instances(bboxes, segments, keypoints, bbox_format=bbox_format, normalized=normalized)
+        label["instances"] = Instances(
+            bboxes,
+            segments,
+            keypoints,
+            bbox_format=bbox_format,
+            normalized=normalized,
+            preserve_offimage_keypoints=self.data.get("preserve_offimage_keypoints", False),
+        )
         return label
 
     @staticmethod
